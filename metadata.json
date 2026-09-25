@@ -1,0 +1,7 @@
+{
+  "name": "Community Power Share",
+  "description": "Community Power Share (CPS) dynamic fintech crypto platform with an actuator-driven dynamic pricing engine, membership tiers, wallet, live charts, and referral rewards.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

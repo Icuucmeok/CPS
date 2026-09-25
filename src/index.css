@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --theme-bg: #090e24;
+    --theme-card: #111d44;
+    --theme-card-hover: #162659;
+    --theme-border: #1f3473;
+    --theme-text-primary: #f8fafc;
+    --theme-text-secondary: #94a3b8;
+    --theme-text-muted: #64748b;
+    --theme-accent: #38bdf8;
+    --theme-accent-glow: rgba(56, 189, 248, 0.15);
+  }
+
+  [data-theme='dark-blue'] {
+    --theme-bg: #090e24;
+    --theme-card: #111d44;
+    --theme-card-hover: #162659;
+    --theme-border: #1f3473;
+    --theme-text-primary: #f8fafc;
+    --theme-text-secondary: #94a3b8;
+    --theme-text-muted: #64748b;
+    --theme-accent: #38bdf8;
+    --theme-accent-glow: rgba(56, 189, 248, 0.15);
+  }
+
+  [data-theme='dark'] {
+    --theme-bg: #111520;
+    --theme-card: #1a202c;
+    --theme-card-hover: #222938;
+    --theme-border: #2d3748;
+    --theme-text-primary: #f1f5f9;
+    --theme-text-secondary: #94a3b8;
+    --theme-text-muted: #64748b;
+    --theme-accent: #60a5fa;
+    --theme-accent-glow: rgba(96, 165, 250, 0.15);
+  }
+
+  [data-theme='white'] {
+    --theme-bg: #f8fafc;
+    --theme-card: #ffffff;
+    --theme-card-hover: #f1f5f9;
+    --theme-border: #e2e8f0;
+    --theme-text-primary: #0f172a;
+    --theme-text-secondary: #475569;
+    --theme-text-muted: #94a3b8;
+    --theme-accent: #2563eb;
+    --theme-accent-glow: rgba(37, 99, 235, 0.12);
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbars for slick crypto look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Radiating Wi-Fi / Radio Signal Wave Animations for Online Actuator Button */
+@keyframes wifiWaveExpand {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
+.animate-wifi-wave-1 {
+  animation: wifiWaveExpand 2.2s cubic-bezier(0.1, 0.4, 0.8, 1) infinite;
+}
+
+.animate-wifi-wave-2 {
+  animation: wifiWaveExpand 2.2s cubic-bezier(0.1, 0.4, 0.8, 1) infinite 0.7s;
+}
+
+.animate-wifi-wave-3 {
+  animation: wifiWaveExpand 2.2s cubic-bezier(0.1, 0.4, 0.8, 1) infinite 1.4s;
+}
