@@ -5,8 +5,17 @@ This codebase is configured with **Capacitor** to build native packages for **An
 ---
 
 ## 🛡️ Architecture & Security Segregation
-- **Web App (VPS / Browser):** Full capabilities, including the **Master Admin Panel**, **Passkey Authenticator**, and dynamic bonding curve controls.
-- **Mobile Apps (Google Play Store & Apple App Store):** Admin buttons, passkey gates, and admin panels are **strictly stripped and disabled**. Users only see the clean, consumer-facing application.
+- **Regular Users (Web & Mobile Apps):**
+  - **Zero Admin Indication:** There are NO admin buttons, NO "Administrator Portal" cards, NO "Authenticate Passkey" buttons, and NO platform flags shown anywhere in Settings, Navigation, or Header.
+  - The application appears 100% clean and consumer-ready for standard users, Google Play Store reviewers, and Apple App Store reviewers.
+
+- **Master Administrator Secret Web Link:**
+  - The Admin Panel is accessed **only** by you via a secret web URL:
+    - `https://your-domain.com/#admin`
+    - or `https://your-domain.com/?admin=portal`
+  - Opening this secret link opens the **Master Passkey Modal** (Passkey: `992811`).
+  - Upon unlocking, you enter the Master Admin Control Room.
+  - When you exit or lock the session, the app immediately locks, hides admin tools, and clears the URL back to normal.
 
 ---
 

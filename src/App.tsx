@@ -185,6 +185,16 @@ export default function App() {
   const handleExitAdminSession = () => {
     setUser((prev) => ({ ...prev, isAdmin: false }));
     setActiveTab('dashboard');
+    try {
+      if (
+        window.location.hash.toLowerCase().includes('admin') ||
+        window.location.search.toLowerCase().includes('admin')
+      ) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch {
+      // ignore
+    }
     const exitNotif: AppNotification = {
       id: `notif_exit_${Date.now()}`,
       type: 'system',
@@ -313,6 +323,44 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT_MESSAGES);
   const [referrals, setReferrals] = useState<ReferralRecord[]>(INITIAL_REFERRALS);
+
+  // =========================================================================
+  // SECRET ADMIN WEBLINK GATE
+  // Admin Panel is accessed exclusively via secret URL (e.g. ?admin=portal or /#admin)
+  // Normal visitors and regular users will never see any admin buttons or indicators.
+  // =========================================================================
+  useEffect(() => {
+    const checkAdminWebLink = () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hash = window.location.hash.toLowerCase();
+        const hasAdminLink =
+          urlParams.get('admin') === 'portal' ||
+          urlParams.get('admin') === 'root' ||
+          urlParams.get('admin') === 'true' ||
+          hash === '#admin' ||
+          hash === '#admin-portal';
+
+        if (hasAdminLink && isAdminSupported) {
+          if (!user.isAdmin) {
+            setShowAdminAuthModal(true);
+          } else {
+            setActiveTab('admin');
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    checkAdminWebLink();
+    window.addEventListener('hashchange', checkAdminWebLink);
+    window.addEventListener('popstate', checkAdminWebLink);
+    return () => {
+      window.removeEventListener('hashchange', checkAdminWebLink);
+      window.removeEventListener('popstate', checkAdminWebLink);
+    };
+  }, [isAdminSupported, user.isAdmin]);
 
   // 9. Rewarded Video Ad: watch count, counter persistence, daily active status
   const [showRewardedVideoAd, setShowRewardedVideoAd] = useState<boolean>(false);
@@ -1358,15 +1406,10 @@ export default function App() {
               user={user}
               theme={theme}
               referralCount={referrals.length}
-              isAdminSupported={isAdminSupported}
-              isSimulatedMobile={simulatedPlatform === 'mobile'}
-              onToggleSimulatedMobile={handleToggleSimulatedPlatform}
               onThemeChange={setTheme}
               onUpdateUserProfile={handleUpdateUserProfile}
               onUpgradeTier={handleUpgradeTier}
               onOpenKycModal={() => setShowKycModal(true)}
-              onOpenAdmin={isAdminSupported ? () => handleTabChangeWithRateLimit('admin') : undefined}
-              onOpenAdminAuth={isAdminSupported ? () => setShowAdminAuthModal(true) : undefined}
               onDeleteAccount={handleDeleteAccount}
             />
           )}

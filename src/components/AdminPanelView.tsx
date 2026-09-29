@@ -53,7 +53,8 @@ import {
   X,
   CreditCard,
   Calendar,
-  Tv
+  Tv,
+  Copy
 } from 'lucide-react';
 import { 
   UserProfile, 
@@ -70,9 +71,12 @@ import {
 } from '../types';
 import { 
   BASE_PRICE, 
-  calculateDynamicPrice,
-  formatCryptoPrice 
+  calculateDynamicPrice, 
+  formatCryptoPrice,
+  runPricingEngineTests,
+  UnitTestResult
 } from '../utils/pricingEngine';
+import { POSTGRESQL_TRANSACTION_SCHEMA, REALTIME_API_INTEGRATION_STRATEGY } from '../data/architectureDocs';
 import { INITIAL_ADMIN_KYC_DOSSIERS } from '../data/mockData';
 import { AdminReferralsTab } from './AdminReferralsTab';
 import { AdminCardsTab } from './AdminCardsTab';
@@ -234,6 +238,29 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
 
   // Chat tab broadcast state
   const [adminBroadcastText, setAdminBroadcastText] = useState('');
+
+  // Architecture & Engine Verification states (Exclusively inside Admin Panel)
+  const [archTab, setArchTab] = useState<'tests' | 'schema' | 'realtime_api'>('tests');
+  const [testResults, setTestResults] = useState<UnitTestResult[] | null>(null);
+  const [testsRunning, setTestsRunning] = useState(false);
+  const [copiedDoc, setCopiedDoc] = useState<string | null>(null);
+
+  const handleRunEngineTests = () => {
+    setTestsRunning(true);
+    setTimeout(() => {
+      const suite = runPricingEngineTests();
+      setTestResults(suite.results);
+      setTestsRunning(false);
+      showToast(`Mathematical suite completed: ${suite.summary.passed}/${suite.summary.total} tests passed`);
+    }, 400);
+  };
+
+  const handleCopyArchitectureDoc = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedDoc(label);
+    showToast(`${label} copied to clipboard!`);
+    setTimeout(() => setCopiedDoc(null), 2000);
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -644,6 +671,25 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
               <p className="text-xs mt-1" style={{ color: 'var(--theme-text-muted)' }}>
                 Full Operational Control • Pricing Bonding Curve, User Balances, KYC Verification, 100M Airdrop & Emergency Kill-Switches
               </p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/30 flex items-center gap-1.5">
+                  <span className="text-slate-400">Secret Web Link:</span>
+                  <span className="text-sky-200 font-bold">/#admin</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const secretUrl = `${window.location.origin}${window.location.pathname}#admin`;
+                    navigator.clipboard.writeText(secretUrl);
+                    showToast('Secret Admin Weblink copied to clipboard!');
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 border border-sky-500/40 transition-all cursor-pointer"
+                  title="Copy secret direct link to admin panel"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Copy Secret Link</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3105,6 +3151,204 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Engine Verification, PostgreSQL DDL Schemas & WebSocket API (Admin-Only) */}
+          <div
+            className="p-5 sm:p-6 rounded-3xl border space-y-4"
+            style={{ backgroundColor: 'var(--theme-card)', borderColor: 'var(--theme-border)' }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-sky-400" />
+                <div>
+                  <h3 className="text-base font-extrabold" style={{ color: 'var(--theme-text-primary)' }}>
+                    Engine Verification, Database Schemas & API Architecture
+                  </h3>
+                  <p className="text-xs" style={{ color: 'var(--theme-text-muted)' }}>
+                    Mathematical verification tests, production PostgreSQL partitioning DDL, and real-time WebSocket protocol
+                  </p>
+                </div>
+              </div>
+
+              {/* Subtabs */}
+              <div
+                className="flex rounded-xl border p-1 text-xs font-semibold"
+                style={{ borderColor: 'var(--theme-border)', backgroundColor: 'var(--theme-bg)' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setArchTab('tests')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    archTab === 'tests'
+                      ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
+                      : 'hover:text-sky-400 text-slate-400'
+                  }`}
+                >
+                  Unit Tests
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setArchTab('schema')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    archTab === 'schema'
+                      ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
+                      : 'hover:text-sky-400 text-slate-400'
+                  }`}
+                >
+                  PostgreSQL Schema DDL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setArchTab('realtime_api')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    archTab === 'realtime_api'
+                      ? 'bg-sky-500 text-slate-950 font-extrabold shadow'
+                      : 'hover:text-sky-400 text-slate-400'
+                  }`}
+                >
+                  Real-Time Market API
+                </button>
+              </div>
+            </div>
+
+            {/* TAB 1: PRICING ENGINE UNIT TESTS */}
+            {archTab === 'tests' && (
+              <div className="space-y-4">
+                <div 
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border text-xs" 
+                  style={{ backgroundColor: 'var(--theme-bg)', borderColor: 'var(--theme-border)' }}
+                >
+                  <div>
+                    <span className="font-extrabold text-sm block" style={{ color: 'var(--theme-text-primary)' }}>
+                      Community Power Share (CPS) Mathematical Engine Test Suite
+                    </span>
+                    <span className="text-slate-400">
+                      Tests baseline $0.0000001, 2-user proportional symmetry, Observer exclusion, and 1M stress tests.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRunEngineTests}
+                    disabled={testsRunning}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-98 text-slate-950 font-extrabold text-xs shadow transition-all shrink-0 cursor-pointer"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>{testsRunning ? 'Running Assertions...' : 'Execute Unit Tests'}</span>
+                  </button>
+                </div>
+
+                {testResults ? (
+                  <div className="space-y-2">
+                    {testResults.map((test, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                        style={{
+                          backgroundColor: 'var(--theme-bg)',
+                          borderColor: test.passed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.4)',
+                        }}
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            {test.passed ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                            )}
+                            <span className="font-bold text-xs" style={{ color: 'var(--theme-text-primary)' }}>
+                              {test.name}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-800 text-slate-400 border border-slate-700">
+                              {test.category}
+                            </span>
+                          </div>
+                          <p className="text-[11px] mt-0.5 ml-6 text-slate-400">
+                            {test.details}
+                          </p>
+                        </div>
+
+                        <div className="text-right ml-6 sm:ml-0 shrink-0">
+                          <span className="font-mono text-[11px] text-emerald-400 font-bold">
+                            {test.received}
+                          </span>
+                          <span className="block text-[10px] text-slate-500 font-mono">
+                            {test.durationMs}ms
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div 
+                    className="text-center py-8 border rounded-2xl" 
+                    style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text-muted)' }}
+                  >
+                    <p className="text-xs">
+                      Click <strong>"Execute Unit Tests"</strong> above to run verification assertions against the pricing formula.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: POSTGRESQL DATABASE SCHEMA */}
+            {archTab === 'schema' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">
+                    PostgreSQL Monthly Range Partitioning Schema with Indexing Strategy & Audit Trail:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyArchitectureDoc(POSTGRESQL_TRANSACTION_SCHEMA, 'PostgreSQL Schema DDL')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 border-sky-500/30 transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{copiedDoc === 'PostgreSQL Schema DDL' ? 'Copied DDL!' : 'Copy SQL'}</span>
+                  </button>
+                </div>
+                <pre
+                  className="p-4 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-[420px] border leading-relaxed"
+                  style={{
+                    backgroundColor: 'var(--theme-bg)',
+                    borderColor: 'var(--theme-border)',
+                    color: '#38bdf8',
+                  }}
+                >
+                  {POSTGRESQL_TRANSACTION_SCHEMA}
+                </pre>
+              </div>
+            )}
+
+            {/* TAB 3: REAL-TIME MARKET API STRATEGY */}
+            {archTab === 'realtime_api' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">
+                    WebSocket Protocol, Sliding Window Heartbeat & Presence Engine:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyArchitectureDoc(REALTIME_API_INTEGRATION_STRATEGY, 'WebSocket API Protocol')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 border-sky-500/30 transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{copiedDoc === 'WebSocket API Protocol' ? 'Copied Specs!' : 'Copy Specs'}</span>
+                  </button>
+                </div>
+                <pre
+                  className="p-4 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-[420px] border leading-relaxed whitespace-pre-wrap"
+                  style={{
+                    backgroundColor: 'var(--theme-bg)',
+                    borderColor: 'var(--theme-border)',
+                    color: '#e2e8f0',
+                  }}
+                >
+                  {REALTIME_API_INTEGRATION_STRATEGY}
+                </pre>
+              </div>
+            )}
           </div>
         </div>
       )}
